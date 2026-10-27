@@ -1,0 +1,58 @@
+query RunInput {
+  presentmentCurrencyRate
+
+  cart {
+    lines {
+      id
+      quantity
+
+      bundle: attribute(key: "_bundle") {
+        value
+      }
+
+      bundlePrice: attribute(key: "_bundle_price") {
+        value
+      }
+
+      bundleImage: attribute(key: "_bundle_image") {
+        value
+      }
+
+      bundleImageVisible: attribute(key: "Bundle Image") {
+        value
+      }
+
+      bundleName: attribute(key: "_bundle_name") {
+        value
+      }
+
+      variant1: attribute(key: "Variant ID 1") {
+        value
+      }
+
+      variant2: attribute(key: "Variant ID 2") {
+        value
+      }
+
+      variant3: attribute(key: "Variant ID 3") {
+        value
+      }
+
+      variant4: attribute(key: "Variant ID 4") {
+        value
+      }
+
+      variant5: attribute(key: "Variant ID 5") {
+        value
+      }
+
+      merchandise {
+        __typename
+
+        ... on ProductVariant {
+          id
+        }
+      }
+    }
+  }
+}
