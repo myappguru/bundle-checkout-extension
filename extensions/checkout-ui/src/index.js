@@ -28,6 +28,41 @@ export function run(input) {
     const bundleImageUrl = rawImageUrl.startsWith("//") ? `https:${rawImageUrl}` : rawImageUrl;
     const bundleName = line.bundleName?.value;
 
+    // Expand into component products when the theme sends "_bundle_items":
+    // [{ "variantId": 123, "quantity": 1, "price": 129.00 }, ...] (regular unit price, shop currency)
+    const items = parseBundleItems(line.bundleItems?.value);
+
+    if (items.length) {
+      const regularTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      // Spread the bundle price across the items in proportion to their regular prices
+      const ratio = regularTotal > 0 ? bundleTotal / (regularTotal * currencyRate) : 0;
+
+      const expandOp = {
+        cartLineId: line.id,
+        title: bundleName,
+        expandedCartItems: items.map((item) => ({
+          merchandiseId: `gid://shopify/ProductVariant/${item.variantId}`,
+          quantity: item.quantity,
+          price: {
+            adjustment: {
+              fixedPricePerUnit: {
+                amount: (item.price * currencyRate * ratio).toFixed(2),
+              },
+            },
+          },
+        })),
+      };
+
+      if (bundleImageUrl) {
+        expandOp.image = { url: bundleImageUrl };
+      }
+
+      operations.push({ lineExpand: expandOp });
+
+      console.error(`=== EXPAND OK: "${bundleName}" → ${items.length} item(s), ${bundleTotal.toFixed(2)} ===`);
+      continue;
+    }
+
     const updateOp = {
       cartLineId: line.id,
       title: bundleName,
@@ -52,4 +87,24 @@ export function run(input) {
   console.error(`=== DONE: ${operations.length} operation(s) generated ===`);
 
   return { operations };
+}
+
+function parseBundleItems(value) {
+  if (!value) return [];
+
+  try {
+    const items = JSON.parse(value);
+    if (!Array.isArray(items)) return [];
+
+    return items
+      .map((item) => ({
+        variantId: String(item.variantId ?? "").replace(/\D/g, ""),
+        quantity: parseInt(item.quantity, 10) || 1,
+        price: parseFloat(item.price) || 0,
+      }))
+      .filter((item) => item.variantId);
+  } catch (error) {
+    console.error("Invalid _bundle_items:", value);
+    return [];
+  }
 }

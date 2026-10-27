@@ -26,6 +26,10 @@ query RunInput {
         value
       }
 
+      bundleItems: attribute(key: "_bundle_items") {
+        value
+      }
+
       variant1: attribute(key: "Variant ID 1") {
         value
       }
